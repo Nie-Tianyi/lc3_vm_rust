@@ -2,8 +2,8 @@ mod config;
 use config::*;
 
 struct LC3VM {
-    memory: [u16; MEMORY_SIZE], // total memory size
-    reg: [u16; REG_COUNT], // 8 REG + 1 PC + 1 FLAG
+    memory: [u16; MEMORY_SIZE as usize], // total memory size
+    reg: [u16; REG_COUNT as usize], // 8 REG + 1 PC + 1 FLAG
     debug: bool,
 }
 
@@ -24,18 +24,18 @@ impl LC3VM {
         self.debug
     }
     #[inline]
-    pub fn register(&self, reg: usize) -> u16 {
-        if reg > 10 {
+    pub fn register(&self, reg: u16) -> u16 {
+        if reg >= REG_COUNT {
             panic!("Error: Trying to access a illegal register")
         }
-        self.reg[reg]
+        self.reg[reg as usize]
     }
     #[inline]
-    pub fn write_reg(&mut self, reg: usize, val: u16) {
-        if reg > 10 {
+    pub fn write_reg(&mut self, reg: u16, val: u16) {
+        if reg >= REG_COUNT {
             panic!("Error: Trying to write a illegal register")
         }
-        self.reg[reg] = val;
+        self.reg[reg as usize] = val;
     }
     #[inline]
     pub fn pc(&self) -> u16 {
@@ -52,6 +52,14 @@ impl LC3VM {
     #[inline]
     pub fn cond(&self) -> u16 {
         self.reg[R_COND]
+    }
+    #[inline]
+    pub fn read_address(&self, address: u16) -> u16 {
+        self.memory[address as usize]
+    }
+    #[inline]
+    pub fn write_address(&mut self, address: u16, val: u16) {
+        self.memory[address as usize] = val;
     }
 }
 
