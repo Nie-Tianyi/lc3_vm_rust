@@ -9,9 +9,9 @@ struct LC3VM {
 
 impl LC3VM {
     pub fn new(debug: bool) -> LC3VM {
-        let memory = [0; MEMORY_SIZE];
-        let mut reg = [0; REG_COUNT];
-        reg[R_PC] = PC_START;
+        let memory = [0; MEMORY_SIZE as usize];
+        let mut reg = [0; REG_COUNT as usize];
+        reg[R_PC as usize] = PC_START;
 
         LC3VM {
             memory,
@@ -39,19 +39,19 @@ impl LC3VM {
     }
     #[inline]
     pub fn pc(&self) -> u16 {
-        self.reg[R_PC]
+        self.reg[R_PC as usize]
     }
     #[inline]
     pub fn set_pc(&mut self, val: u16) {
-        self.reg[R_PC] = val
+        self.reg[R_PC as usize] = val
     }
     #[inline]
     pub fn inc_pc(&mut self) {
-        self.reg[R_PC] += 1;
+        self.reg[R_PC as usize] += 1;
     }
     #[inline]
     pub fn cond(&self) -> u16 {
-        self.reg[R_COND]
+        self.reg[R_COND as usize]
     }
     #[inline]
     pub fn read_address(&self, address: u16) -> u16 {
