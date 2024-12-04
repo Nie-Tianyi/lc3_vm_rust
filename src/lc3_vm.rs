@@ -4,25 +4,24 @@ mod util;
 use byteorder::{BigEndian, ReadBytesExt};
 use config::*;
 use std::fs::File;
-use std::{io, process};
 use std::io::{BufReader, Read, Write};
 use std::path::Path;
+use std::{io, process};
 use util::*;
 
 pub struct LC3VM {
     memory: [u16; MEMORY_SIZE], // total memory size
     reg: [u16; REG_COUNT],      // 8 REG + 1 PC + 1 FLAG
-    debug: bool,
 }
 
 impl LC3VM {
-    pub fn new(debug: bool) -> LC3VM {
+    pub fn new() -> LC3VM {
         let memory = [0; MEMORY_SIZE];
         let mut reg = [0; REG_COUNT];
         reg[R_PC] = PC_START;
         reg[R_COND] = FL_ZRO;
 
-        LC3VM { memory, reg, debug }
+        LC3VM { memory, reg }
     }
 
     pub fn load(&mut self, path: impl AsRef<Path>) {
@@ -56,10 +55,11 @@ impl LC3VM {
             let opcode = ins >> 12;
 
             match opcode {
+                OP_BR => self.br(ins),
                 OP_ADD => self.add(ins),
                 OP_LD => self.ld(ins),
                 OP_ST => self.st(ins),
-                OP_JSR => self.str(ins),
+                OP_JSR => self.jsr(ins),
                 OP_AND => self.and(ins),
                 OP_LDR => self.ldr(ins),
                 OP_STR => self.str(ins),
@@ -75,12 +75,8 @@ impl LC3VM {
         }
     }
 }
-impl LC3VM {
-    #[inline]
-    fn is_debug(&self) -> bool {
-        self.debug
-    }
 
+impl LC3VM {
     #[inline]
     fn register(&self, reg: u16) -> u16 {
         let reg = reg as usize;
@@ -111,7 +107,7 @@ impl LC3VM {
 
     #[inline]
     fn inc_pc(&mut self, n: u16) {
-        self.reg[R_PC] += n;
+        self.reg[R_PC] = self.reg[R_PC].wrapping_add(n);
     }
 
     #[inline]
@@ -123,7 +119,7 @@ impl LC3VM {
     fn read_address(&mut self, address: u16) -> u16 {
         if address == MR_KBSR {
             let mut buffer = [0; 1];
-            std::io::stdin().read_exact(&mut buffer).unwrap();
+            io::stdin().read_exact(&mut buffer).unwrap();
             if buffer[0] != 0 {
                 self.write_address(MR_KBSR, 1 << 15);
                 self.write_address(MR_KBDR, buffer[0] as u16);
@@ -164,10 +160,10 @@ impl LC3VM {
 
         if imm_flag == 1 {
             let imm5 = sign_extend(ins & P_5, 5);
-            self.write_reg(r0, self.register(r1) + imm5);
+            self.write_reg(r0, self.register(r1).wrapping_add(imm5));
         } else {
             let r2 = ins & P_3;
-            self.write_reg(r0, self.register(r1) + self.register(r2))
+            self.write_reg(r0, self.register(r1).wrapping_add(self.register(r2)))
         }
 
         self.update_flag(r0);
@@ -177,8 +173,7 @@ impl LC3VM {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
 
-        let address = self.read_address(self.pc() + pc_offset);
-
+        let address = self.read_address(self.pc().wrapping_add(pc_offset));
         let val = self.read_address(address);
         self.write_reg(r0, val);
     }
@@ -237,7 +232,7 @@ impl LC3VM {
     fn ld(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
-        let val = self.read_address(self.pc() + pc_offset);
+        let val = self.read_address(self.pc().wrapping_add(pc_offset));
         self.write_reg(r0, val);
         self.update_flag(r0);
     }
@@ -248,7 +243,7 @@ impl LC3VM {
 
         let offset = sign_extend(ins & P_6, 6);
 
-        let val = self.read_address(self.register(r1) + offset);
+        let val = self.read_address(self.register(r1).wrapping_add(offset));
         self.write_reg(r0, val);
         self.update_flag(r0);
     }
@@ -256,20 +251,20 @@ impl LC3VM {
     fn lea(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
-        self.write_reg(r0, self.pc() + pc_offset);
+        self.write_reg(r0, self.pc().wrapping_add(pc_offset));
         self.update_flag(r0);
     }
     // store
     fn st(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
-        self.write_address(self.pc() + pc_offset, self.register(r0));
+        self.write_address(self.pc().wrapping_add(pc_offset), self.register(r0));
     }
     // store indirect
     fn sti(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
-        let reg = self.read_address(self.pc() + pc_offset);
+        let reg = self.read_address(self.pc().wrapping_add(pc_offset));
         self.write_address(reg, self.register(r0));
     }
 
@@ -277,7 +272,8 @@ impl LC3VM {
         let r0 = (ins >> 9) & P_3;
         let r1 = (ins >> 6) & P_3;
         let offset = sign_extend(ins & P_6, 6);
-        self.write_address(self.register(r1) + offset, self.register(r0));
+        let addr = self.register(r1).wrapping_add(offset);
+        self.write_address(addr, self.register(r0));
     }
 
     fn trap(&mut self, ins: u16) {
@@ -306,7 +302,7 @@ impl LC3VM {
             TRAP_IN => {
                 print!("Enter a  character : ");
                 io::stdout().flush().expect("failed to flush");
-                let char = std::io::stdin().bytes().next().and_then(|result| result.ok()).map(|byte| byte as u16).unwrap();
+                let char = io::stdin().bytes().next().and_then(|result| result.ok()).map(|byte| byte as u16).unwrap();
                 self.write_reg(R0 as u16, char);
                 self.update_flag(R0 as u16);
             }
@@ -341,6 +337,6 @@ mod tests {
 
     #[test]
     fn test() {
-        let vm = LC3VM::new(true);
+        let vm = LC3VM::new();
     }
 }

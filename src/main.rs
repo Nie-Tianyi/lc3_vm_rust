@@ -23,7 +23,7 @@ fn main() {
 
     let cli = Cli::from_args();
 
-    let mut vm = LC3VM::new(false);
+    let mut vm = LC3VM::new();
     vm.load(cli.path);
     vm.execute();
 
