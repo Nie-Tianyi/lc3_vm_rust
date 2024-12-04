@@ -1,6 +1,6 @@
 # A LC-3 Virtual Machine Implemented by Rust
 
-follow the tutorial provided by [Justinmeiners](https://www.jmeiners.com/lc3-vm/)
+follow the tutorial provided by [Justin Meiners](https://www.jmeiners.com/lc3-vm/)
 
 run the test assemblies by following commands:
 
