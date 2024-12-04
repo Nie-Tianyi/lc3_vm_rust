@@ -1,11 +1,15 @@
 mod config;
 mod util;
 
-use std::io::{Read, Write};
+use byteorder::{BigEndian, ReadBytesExt};
 use config::*;
+use std::fs::File;
+use std::{io, process};
+use std::io::{BufReader, Read, Write};
+use std::path::Path;
 use util::*;
 
-struct LC3VM {
+pub struct LC3VM {
     memory: [u16; MEMORY_SIZE], // total memory size
     reg: [u16; REG_COUNT],      // 8 REG + 1 PC + 1 FLAG
     debug: bool,
@@ -19,6 +23,30 @@ impl LC3VM {
         reg[R_COND] = FL_ZRO;
 
         LC3VM { memory, reg, debug }
+    }
+
+    pub fn load(&mut self, path: impl AsRef<Path>) {
+        let file = File::open(path).expect("Cannot Open File");
+        let mut file = BufReader::new(file);
+
+        let mut addr = file.read_u16::<BigEndian>().expect("Read File Error");
+
+        loop {
+            match file.read_u16::<BigEndian>() {
+                Ok(ins) => {
+                    self.write_address(addr, ins);
+                    addr += 1;
+                }
+                Err(e) => {
+                    if e.kind() == io::ErrorKind::UnexpectedEof {
+                        println!("OK")
+                    } else {
+                        println!("failed: {}", e);
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     pub fn execute(&mut self) {
@@ -92,7 +120,17 @@ impl LC3VM {
     }
 
     #[inline]
-    fn read_address(&self, address: u16) -> u16 {
+    fn read_address(&mut self, address: u16) -> u16 {
+        if address == MR_KBSR {
+            let mut buffer = [0; 1];
+            std::io::stdin().read_exact(&mut buffer).unwrap();
+            if buffer[0] != 0 {
+                self.write_address(MR_KBSR, 1 << 15);
+                self.write_address(MR_KBDR, buffer[0] as u16);
+            } else {
+                self.write_address(MR_KBSR, 0);
+            }
+        }
         self.memory[address as usize]
     }
 
@@ -119,7 +157,7 @@ impl LC3VM {
 
 impl LC3VM {
     fn add(&mut self, ins: u16) {
-        // & P_3 means only retain last 3 bits
+        // `& P_3` means only retain last 3 bits
         let r0 = (ins >> 9) & P_3; // destination register
         let r1 = (ins >> 6) & P_3;
         let imm_flag = (ins >> 6) & P_1;
@@ -141,7 +179,8 @@ impl LC3VM {
 
         let address = self.read_address(self.pc() + pc_offset);
 
-        self.write_reg(r0, self.read_address(address));
+        let val = self.read_address(address);
+        self.write_reg(r0, val);
     }
     // bitwise and operation
     fn and(&mut self, ins: u16) {
@@ -198,7 +237,8 @@ impl LC3VM {
     fn ld(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
-        self.write_reg(r0, self.read_address(self.pc() + pc_offset));
+        let val = self.read_address(self.pc() + pc_offset);
+        self.write_reg(r0, val);
         self.update_flag(r0);
     }
     // load register
@@ -207,7 +247,9 @@ impl LC3VM {
         let r1 = (ins >> 6) & P_3;
 
         let offset = sign_extend(ins & P_6, 6);
-        self.write_reg(r0, self.read_address(self.register(r1) + offset));
+
+        let val = self.read_address(self.register(r1) + offset);
+        self.write_reg(r0, val);
         self.update_flag(r0);
     }
     // load effective address
@@ -227,7 +269,8 @@ impl LC3VM {
     fn sti(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
-        self.write_address(self.read_address(self.pc() + pc_offset), self.register(r0));
+        let reg = self.read_address(self.pc() + pc_offset);
+        self.write_address(reg, self.register(r0));
     }
 
     fn str(&mut self, ins: u16) {
@@ -241,8 +284,8 @@ impl LC3VM {
         self.write_reg(R7 as u16, self.pc());
         match ins & P_8 {
             TRAP_GETC => { // get char
-                let mut buffer = [0;1];
-                std::io::stdin().read_exact(&mut buffer).unwrap();
+                let mut buffer = [0; 1];
+                io::stdin().read_exact(&mut buffer).unwrap();
                 self.write_reg(R0 as u16, buffer[0] as u16);
                 self.update_flag(R0 as u16);
             }
@@ -258,17 +301,12 @@ impl LC3VM {
                     index += 1;
                     c = self.read_address(index);
                 }
-                std::io::stdout().flush().expect("Failed to Flush");
+                io::stdout().flush().expect("Failed to Flush");
             }
             TRAP_IN => {
                 print!("Enter a  character : ");
-                std::io::stdout().flush().expect("failed to flush");
-                let char = std::io::stdin()
-                    .bytes()
-                    .next()
-                    .and_then(|result| result.ok())
-                    .map(|byte| byte as u16)
-                    .unwrap();
+                io::stdout().flush().expect("failed to flush");
+                let char = std::io::stdin().bytes().next().and_then(|result| result.ok()).map(|byte| byte as u16).unwrap();
                 self.write_reg(R0 as u16, char);
                 self.update_flag(R0 as u16);
             }
@@ -285,12 +323,12 @@ impl LC3VM {
                     index += 1;
                     c = self.read_address(index);
                 }
-                std::io::stdout().flush().expect("Fail to Flush");
+                io::stdout().flush().expect("Fail to Flush");
             }
             TRAP_HALT => {
                 println!("HALT detected");
-                std::io::stdout().flush().expect("Fail to Flush");
-                std::process::exit(1);
+                io::stdout().flush().expect("Fail to Flush");
+                process::exit(1);
             }
             _ => panic!("Unknown Trap Code"),
         }
