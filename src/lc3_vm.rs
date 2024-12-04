@@ -19,7 +19,6 @@ impl LC3VM {
         let memory = [0; MEMORY_SIZE];
         let mut reg = [0; REG_COUNT];
         reg[R_PC] = PC_START;
-        reg[R_COND] = FL_ZRO;
 
         LC3VM { memory, reg }
     }
@@ -50,7 +49,7 @@ impl LC3VM {
 
     pub fn execute(&mut self) {
         loop {
-            let ins = self.read_address(self.reg[R_PC]);
+            let ins = self.read_address(self.pc());
             self.inc_pc(1);
             let opcode = ins >> 12;
 
@@ -143,7 +142,7 @@ impl LC3VM {
 
         if self.reg[reg] == 0 {
             self.reg[R_COND] = FL_ZRO;
-        } else if self.reg[reg] >> 15 == 1 {
+        } else if self.reg[reg] >> 15 != 0 {
             self.reg[R_COND] = FL_NEG;
         } else {
             self.reg[R_COND] = FL_POS;
@@ -176,6 +175,7 @@ impl LC3VM {
         let address = self.read_address(self.pc().wrapping_add(pc_offset));
         let val = self.read_address(address);
         self.write_reg(r0, val);
+        self.update_flag(r0);
     }
     // bitwise and operation
     fn and(&mut self, ins: u16) {
@@ -277,13 +277,11 @@ impl LC3VM {
     }
 
     fn trap(&mut self, ins: u16) {
-        self.write_reg(R7 as u16, self.pc());
         match ins & P_8 {
             TRAP_GETC => { // get char
                 let mut buffer = [0; 1];
                 io::stdin().read_exact(&mut buffer).unwrap();
                 self.write_reg(R0 as u16, buffer[0] as u16);
-                self.update_flag(R0 as u16);
             }
             TRAP_OUT => {
                 let c = self.register(R0 as u16) as u8;
@@ -293,24 +291,24 @@ impl LC3VM {
                 let mut index = self.register(R0 as u16);
                 let mut c = self.read_address(index);
                 while c != 0x0 {
-                    print!("{}", c as u8 as char);
+                    let chr = (c as u8) as char;
+                    print!("{}", chr);
                     index += 1;
                     c = self.read_address(index);
                 }
                 io::stdout().flush().expect("Failed to Flush");
             }
             TRAP_IN => {
-                print!("Enter a  character : ");
+                print!("Enter a character : ");
                 io::stdout().flush().expect("failed to flush");
                 let char = io::stdin().bytes().next().and_then(|result| result.ok()).map(|byte| byte as u16).unwrap();
                 self.write_reg(R0 as u16, char);
-                self.update_flag(R0 as u16);
             }
             TRAP_PUTSP => {
                 let mut index = self.register(R0 as u16);
                 let mut c = self.read_address(index);
                 while c != 0x0 {
-                    let c1 = ((c & 0xFF) as u8) as char;
+                    let c1 = ((c & P_8) as u8) as char;
                     print!("{}", c1);
                     let c2 = ((c >> 8) as u8) as char;
                     if c2 != '\0' {

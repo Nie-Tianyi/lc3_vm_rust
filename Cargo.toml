@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-byteorder = "1.5.0"
-structopt = "0.3.26"
-termios = "0.3.3"
+byteorder = "1.4.3"
+structopt = "0.3.22"
+termios = "0.3.1"
