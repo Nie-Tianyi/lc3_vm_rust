@@ -1,8 +1,8 @@
-use std::{io, process};
-use std::io::{Read, Write};
 use crate::lc3_vm::config::*;
-use crate::lc3_vm::LC3VM;
 use crate::lc3_vm::util::sign_extend;
+use crate::lc3_vm::LC3VM;
+use std::io::{Read, Write};
+use std::{io, process};
 
 impl LC3VM {
     pub(crate) fn add(&mut self, ins: u16) {
@@ -132,7 +132,8 @@ impl LC3VM {
 
     pub(crate) fn trap(&mut self, ins: u16) {
         match ins & P_8 {
-            TRAP_GETC => { // get char
+            TRAP_GETC => {
+                // get char
                 let mut buffer = [0; 1];
                 io::stdin().read_exact(&mut buffer).unwrap();
                 self.write_reg(R0 as u16, buffer[0] as u16);
@@ -155,7 +156,12 @@ impl LC3VM {
             TRAP_IN => {
                 print!("Enter a character : ");
                 io::stdout().flush().expect("failed to flush");
-                let char = io::stdin().bytes().next().and_then(|result| result.ok()).map(|byte| byte as u16).unwrap();
+                let char = io::stdin()
+                    .bytes()
+                    .next()
+                    .and_then(|result| result.ok())
+                    .map(|byte| byte as u16)
+                    .unwrap();
                 self.write_reg(R0 as u16, char);
             }
             TRAP_PUTSP => {

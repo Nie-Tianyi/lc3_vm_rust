@@ -1,14 +1,13 @@
 mod config;
-mod util;
 mod instructions;
+mod util;
 
 use byteorder::{BigEndian, ReadBytesExt};
 use config::*;
 use std::fs::File;
+use std::io;
 use std::io::{BufReader, Read, Write};
 use std::path::Path;
-use std::{io, process};
-use util::*;
 
 pub struct LC3VM {
     memory: [u16; MEMORY_SIZE], // total memory size
@@ -150,7 +149,6 @@ impl LC3VM {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

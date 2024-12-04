@@ -10,7 +10,6 @@ struct Cli {
     path: std::path::PathBuf, // The path to the file to read
 }
 
-
 fn main() {
     let stdin = 0;
     let termios = Termios::from_fd(stdin).unwrap();
