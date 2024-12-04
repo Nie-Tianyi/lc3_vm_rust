@@ -85,7 +85,7 @@ impl LC3VM {
         }
         self.reg[reg]
     }
-
+    /// write a register
     #[inline]
     fn write_reg(&mut self, reg: u16, val: u16) {
         let reg = reg as usize;
