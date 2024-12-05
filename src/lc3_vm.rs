@@ -6,7 +6,7 @@ use byteorder::{BigEndian, ReadBytesExt};
 use config::*;
 use std::fs::File;
 use std::io;
-use std::io::{BufReader, Read, Write};
+use std::io::{BufReader, Read};
 use std::path::Path;
 
 pub struct LC3VM {

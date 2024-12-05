@@ -2,11 +2,17 @@ pub const MEMORY_SIZE: usize = u16::MAX as usize;
 pub const REG_COUNT: usize = 10;
 pub const PC_START: u16 = 0x3000;
 pub const R0: usize = 0;
+#[allow(dead_code)]
 pub const R1: usize = 1;
+#[allow(dead_code)]
 pub const R2: usize = 2;
+#[allow(dead_code)]
 pub const R3: usize = 3;
+#[allow(dead_code)]
 pub const R4: usize = 4;
+#[allow(dead_code)]
 pub const R5: usize = 5;
+#[allow(dead_code)]
 pub const R6: usize = 6;
 pub const R7: usize = 7;
 pub const R_PC: usize = 8;
@@ -37,6 +43,7 @@ pub const P_6: u16 = 0x3F; // 0000 0000 0011 1111
 pub const P_8: u16 = 0xFF; // 0000 0000 1111 1111
 pub const P_9: u16 = 0x1FF; // 0000 0001 1111 1111
 pub const P_11: u16 = 0x7FF; // 0000 0111 1111 1111
+#[allow(dead_code)]
 pub const P_16: u16 = 0xFFFF; // 1111 1111 1111 1111
 pub const MR_KBSR: u16 = 0xFE00; // 键盘状态，是否按下
 pub const MR_KBDR: u16 = 0xFE02; // 键盘数据存储

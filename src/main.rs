@@ -12,13 +12,12 @@ struct Cli{
 
 fn main() {
     let stdin = 0;
-    let termios = Termios::from_fd(stdin).unwrap();
+    let mut termios = Termios::from_fd(stdin).unwrap();
 
-    let mut new_termios = termios.clone();
-    new_termios.c_iflag &= IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON;
-    new_termios.c_lflag &= !(ICANON | ECHO); // no echo and canonical mode
+    termios.c_iflag &= IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON;
+    termios.c_lflag &= !(ICANON | ECHO); // no echo and canonical mode
 
-    tcsetattr(stdin, TCSANOW, &mut new_termios).unwrap();
+    tcsetattr(stdin, TCSANOW, &termios).unwrap();
 
     let cli = Cli::parse();
 
