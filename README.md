@@ -4,5 +4,5 @@ follow the tutorial provided by [Justin Meiners](https://www.jmeiners.com/lc3-vm
 
 run the test assemblies by following commands:
 
-- `cargo run -- examples/2048.obj`
-- `cargo run -- examples/rogue.obj`
+- `lc3_vm examples/2048.obj`
+- `lc3_vm examples/rogue.obj`

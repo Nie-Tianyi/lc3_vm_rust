@@ -1,13 +1,13 @@
-use structopt::StructOpt;
 use termios::*;
-
+use clap::Parser;
 mod lc3_vm;
 use lc3_vm::*;
 
-#[derive(StructOpt)]
-struct Cli {
-    #[structopt(parse(from_os_str))]
-    path: std::path::PathBuf, // The path to the file to read
+#[derive(Parser)]
+#[command(version, about, long_about = None)]
+struct Cli{
+    #[arg(short, long, help = "path to the assembly file")]
+    path: String
 }
 
 fn main() {
@@ -20,7 +20,7 @@ fn main() {
 
     tcsetattr(stdin, TCSANOW, &mut new_termios).unwrap();
 
-    let cli = Cli::from_args();
+    let cli = Cli::parse();
 
     let mut vm = LC3VM::new();
     vm.load(cli.path);

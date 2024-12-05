@@ -5,5 +5,5 @@ edition = "2021"
 
 [dependencies]
 byteorder = "1.4.3"
-structopt = "0.3.22"
+clap = { version = "4.5.22", features = ["derive"] }
 termios = "0.3.1"
