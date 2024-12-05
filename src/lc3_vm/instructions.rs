@@ -9,7 +9,7 @@ impl LC3VM {
         // `& P_3` means only retain last 3 bits
         let r0 = (ins >> 9) & P_3; // destination register
         let r1 = (ins >> 6) & P_3;
-        let imm_flag = (ins >> 6) & P_1;
+        let imm_flag = (ins >> 5) & P_1;
 
         if imm_flag == 1 {
             let imm5 = sign_extend(ins & P_5, 5);
@@ -145,7 +145,7 @@ impl LC3VM {
             TRAP_PUTS => {
                 let mut index = self.register(R0 as u16);
                 let mut c = self.read_address(index);
-                while c != 0x0 {
+                while c != 0x0000 {
                     let chr = (c as u8) as char;
                     print!("{}", chr);
                     index += 1;
@@ -167,7 +167,7 @@ impl LC3VM {
             TRAP_PUTSP => {
                 let mut index = self.register(R0 as u16);
                 let mut c = self.read_address(index);
-                while c != 0x0 {
+                while c != 0x0000 {
                     let c1 = ((c & P_8) as u8) as char;
                     print!("{}", c1);
                     let c2 = ((c >> 8) as u8) as char;
