@@ -1,3 +1,4 @@
+use clap::ValueHint;
 use termios::*;
 use clap::Parser;
 mod lc3_vm;
@@ -6,7 +7,12 @@ use lc3_vm::*;
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
 struct Cli{
-    #[arg(short, long, help = "path to the assembly file")]
+    #[arg(
+        value_parser = clap::value_parser!(String),
+        num_args = 1,
+        value_hint = ValueHint::FilePath,
+        help = "path to the assembly file"
+    )]
     path: String
 }
 
