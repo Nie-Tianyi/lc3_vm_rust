@@ -4,61 +4,61 @@ use std::io::{BufReader, Read, Write};
 use std::path::Path;
 use std::{io, process};
 
-pub const MEMORY_SIZE: usize = u16::MAX as usize;
-pub const REG_COUNT: usize = 10;
-pub const PC_START: u16 = 0x3000;
-pub const R0: usize = 0;
+const MEMORY_SIZE: usize = u16::MAX as usize;
+const REG_COUNT: usize = 10;
+const PC_START: u16 = 0x3000;
+const R0: usize = 0;
 #[allow(dead_code)]
-pub const R1: usize = 1;
+const R1: usize = 1;
 #[allow(dead_code)]
-pub const R2: usize = 2;
+const R2: usize = 2;
 #[allow(dead_code)]
-pub const R3: usize = 3;
+const R3: usize = 3;
 #[allow(dead_code)]
-pub const R4: usize = 4;
+const R4: usize = 4;
 #[allow(dead_code)]
-pub const R5: usize = 5;
+const R5: usize = 5;
 #[allow(dead_code)]
-pub const R6: usize = 6;
-pub const R7: usize = 7;
-pub const R_PC: usize = 8;
-pub const R_COND: usize = 9;
-pub const FL_POS: u16 = 1 << 0; // 1，P
-pub const FL_ZRO: u16 = 1 << 1; // 2，Z
-pub const FL_NEG: u16 = 1 << 2; // 4，N
-pub const OP_BR: u16 = 0; // 0000
-pub const OP_ADD: u16 = 1; // 0001
-pub const OP_LD: u16 = 2; // 0010
-pub const OP_ST: u16 = 3; // 0011
-pub const OP_JSR: u16 = 4; // 0100
-pub const OP_AND: u16 = 5; // 0101
-pub const OP_LDR: u16 = 6; // 0110
-pub const OP_STR: u16 = 7; // 0111
-pub const OP_RTI: u16 = 8; // 1000
-pub const OP_NOT: u16 = 9; // 1001
-pub const OP_LDI: u16 = 10; // 1010
-pub const OP_STI: u16 = 11; // 1011
-pub const OP_JMP: u16 = 12; // 1100
-pub const OP_RES: u16 = 13; // 1101
-pub const OP_LEA: u16 = 14; // 1110
-pub const OP_TRAP: u16 = 15; // 1111
-pub const P_1: u16 = 0x1; // 0000 0000 0000 0001
-pub const P_3: u16 = 0x7; // 0000 0000 0000 0111
-pub const P_5: u16 = 0x1F; // 0000 0000 0001 1111
-pub const P_6: u16 = 0x3F; // 0000 0000 0011 1111
-pub const P_8: u16 = 0xFF; // 0000 0000 1111 1111
-pub const P_9: u16 = 0x1FF; // 0000 0001 1111 1111
-pub const P_11: u16 = 0x7FF; // 0000 0111 1111 1111
+const R6: usize = 6;
+const R7: usize = 7;
+const R_PC: usize = 8;
+const R_COND: usize = 9;
+const FL_POS: u16 = 1 << 0; // 1，P
+const FL_ZRO: u16 = 1 << 1; // 2，Z
+const FL_NEG: u16 = 1 << 2; // 4，N
+const OP_BR: u16 = 0; // 0000
+const OP_ADD: u16 = 1; // 0001
+const OP_LD: u16 = 2; // 0010
+const OP_ST: u16 = 3; // 0011
+const OP_JSR: u16 = 4; // 0100
+const OP_AND: u16 = 5; // 0101
+const OP_LDR: u16 = 6; // 0110
+const OP_STR: u16 = 7; // 0111
+const OP_RTI: u16 = 8; // 1000
+const OP_NOT: u16 = 9; // 1001
+const OP_LDI: u16 = 10; // 1010
+const OP_STI: u16 = 11; // 1011
+const OP_JMP: u16 = 12; // 1100
+const OP_RES: u16 = 13; // 1101
+const OP_LEA: u16 = 14; // 1110
+const OP_TRAP: u16 = 15; // 1111
+const P_1: u16 = 0x1; // 0000 0000 0000 0001
+const P_3: u16 = 0x7; // 0000 0000 0000 0111
+const P_5: u16 = 0x1F; // 0000 0000 0001 1111
+const P_6: u16 = 0x3F; // 0000 0000 0011 1111
+const P_8: u16 = 0xFF; // 0000 0000 1111 1111
+const P_9: u16 = 0x1FF; // 0000 0001 1111 1111
+const P_11: u16 = 0x7FF; // 0000 0111 1111 1111
 #[allow(dead_code)]
-pub const P_16: u16 = 0xFFFF; // 1111 1111 1111 1111
-pub const MR_KBSR: u16 = 0xFE00; // 键盘状态，是否按下
-pub const MR_KBDR: u16 = 0xFE02; // 键盘数据存储
-pub const TRAP_GETC: u16 = 0x20;
-pub const TRAP_OUT: u16 = 0x21;
-pub const TRAP_PUTS: u16 = 0x22;
-pub const TRAP_IN: u16 = 0x23;
-pub const TRAP_PUTSP: u16 = 0x24;
-pub const TRAP_HALT: u16 = 0x25;
+const P_16: u16 = 0xFFFF; // 1111 1111 1111 1111
+const MR_KBSR: u16 = 0xFE00; // 键盘状态，是否按下
+const MR_KBDR: u16 = 0xFE02; // 键盘数据存储
+const TRAP_GETC: u16 = 0x20;
+const TRAP_OUT: u16 = 0x21;
+const TRAP_PUTS: u16 = 0x22;
+const TRAP_IN: u16 = 0x23;
+const TRAP_PUTSP: u16 = 0x24;
+const TRAP_HALT: u16 = 0x25;
 
 /// extend a 5-bit signed integer to 16-bit signed integer
 #[inline]
@@ -211,7 +211,7 @@ impl LC3VM {
 }
 
 impl LC3VM {
-    pub(crate) fn add(&mut self, ins: u16) {
+    fn add(&mut self, ins: u16) {
         // `& P_3` means only retain last 3 bits
         let r0 = (ins >> 9) & P_3; // destination register
         let r1 = (ins >> 6) & P_3;
@@ -228,7 +228,7 @@ impl LC3VM {
         self.update_flag(r0);
     }
     // load indirect
-    pub(crate) fn ldi(&mut self, ins: u16) {
+    fn ldi(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
 
@@ -238,7 +238,7 @@ impl LC3VM {
         self.update_flag(r0);
     }
     // bitwise and operation
-    pub(crate) fn and(&mut self, ins: u16) {
+    fn and(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let r1 = (ins >> 6) & P_3;
         let imm_flag = (ins >> 5) & P_1;
@@ -254,7 +254,7 @@ impl LC3VM {
         self.update_flag(r0);
     }
     // bitwise not operation
-    pub(crate) fn not(&mut self, ins: u16) {
+    fn not(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let r1 = (ins >> 6) & P_3;
 
@@ -262,7 +262,7 @@ impl LC3VM {
         self.update_flag(r0);
     }
     // branch
-    pub(crate) fn br(&mut self, ins: u16) {
+    fn br(&mut self, ins: u16) {
         let pc_offset = sign_extend(ins & P_9, 9);
         let cond_flag = (ins >> 9) & P_3;
 
@@ -271,12 +271,12 @@ impl LC3VM {
         }
     }
     // jump
-    pub(crate) fn jmp(&mut self, ins: u16) {
+    fn jmp(&mut self, ins: u16) {
         let r1 = (ins >> 6) & P_3;
         self.set_pc(self.register(r1));
     }
     // jump register
-    pub(crate) fn jsr(&mut self, ins: u16) {
+    fn jsr(&mut self, ins: u16) {
         let long_flag = (ins >> 11) & P_1;
         self.write_reg(R7 as u16, self.pc());
 
@@ -289,7 +289,7 @@ impl LC3VM {
         }
     }
     // load
-    pub(crate) fn ld(&mut self, ins: u16) {
+    fn ld(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
         let val = self.read_address(self.pc().wrapping_add(pc_offset));
@@ -297,7 +297,7 @@ impl LC3VM {
         self.update_flag(r0);
     }
     // load register
-    pub(crate) fn ldr(&mut self, ins: u16) {
+    fn ldr(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let r1 = (ins >> 6) & P_3;
 
@@ -308,27 +308,27 @@ impl LC3VM {
         self.update_flag(r0);
     }
     // load effective address
-    pub(crate) fn lea(&mut self, ins: u16) {
+    fn lea(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
         self.write_reg(r0, self.pc().wrapping_add(pc_offset));
         self.update_flag(r0);
     }
     // store
-    pub(crate) fn st(&mut self, ins: u16) {
+    fn st(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
         self.write_address(self.pc().wrapping_add(pc_offset), self.register(r0));
     }
     // store indirect
-    pub(crate) fn sti(&mut self, ins: u16) {
+    fn sti(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let pc_offset = sign_extend(ins & P_9, 9);
         let reg = self.read_address(self.pc().wrapping_add(pc_offset));
         self.write_address(reg, self.register(r0));
     }
 
-    pub(crate) fn str(&mut self, ins: u16) {
+    fn str(&mut self, ins: u16) {
         let r0 = (ins >> 9) & P_3;
         let r1 = (ins >> 6) & P_3;
         let offset = sign_extend(ins & P_6, 6);
@@ -336,7 +336,7 @@ impl LC3VM {
         self.write_address(addr, self.register(r0));
     }
 
-    pub(crate) fn trap(&mut self, ins: u16) {
+    fn trap(&mut self, ins: u16) {
         match ins & P_8 {
             TRAP_GETC => {
                 // get char
